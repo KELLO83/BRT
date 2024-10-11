@@ -285,21 +285,15 @@ f_non_sig_rewnew = {
     13: [237, 199, 277, 257], 
 }
 
+for key in f_non_sig:
+    # f_non_sig에서 y1 값 추출 (두 번째 요소)
+    y1_value = f_non_sig[key][1]
+    # f_non_sig_rewnew에서 해당 키의 y1 값을 f_non_sig의 y1 값으로 수정
+    f_non_sig_rewnew[key][1] = y1_value
 
-# f_non_sig_rewnew = { # 끝단만 최적화
-#     1: [376, 405, 587, 638],
-#     3: [356, 293, 468, 438],
-#     4: [448, 289, 549, 437],
-#     5: [349, 235, 418, 331],
-#     6: [416, 233, 484, 320],
-#     7: [337, 205, 403, 268],
-#     8: [402, 203, 446, 267],
-#     9 : [170, 242, 232, 371],  # 수정된 좌표
-#     10 : [220,218 ,265,310 ],
-#     11: [338, 168, 382,236],  # 수정된 좌표
-#     12: [381, 166, 419, 235],
-#     13: [237, 199, 277, 257],  # 수정된 좌표
-# }
+# 결과 출력
+f_non_sig_rewnew = f_non_sig_rewnew
+
 
 
 
@@ -522,7 +516,7 @@ def step2_loc(matches, mapper, loc):
 
     return final_matches, match_coords, final_loc
 
-def first(boxes, img, number):
+def first(boxes, img, number = 0):
     global f_non_sig
 
     f_non_sig_len = len(f_non_sig)  # 박스의 수
@@ -531,7 +525,7 @@ def first(boxes, img, number):
     mapper = [[0 for _ in range(f_non_sig_len)] for _ in range(len(boxes))]  
 
 
-    for i in f_non_sig.values():
+    for i in f_non_sig_rewnew.values():
         x1 , y1  ,x2 ,y2 = i
         cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 1)
 
@@ -550,18 +544,23 @@ def first(boxes, img, number):
             mapper[col][row] = round(occupancy_rate, 2)
 
 
-    matches , loc = use_final(matches , mapper , loc)
+    matches , loc = use_final(mapper , boxes)
     
     loc = dict(loc)
     loc = {key + 1 : value for key , value in loc.items()}
     loc = dict(sorted(loc.items()))
     matches = sorted(list(map(lambda x : x+1 , filter(lambda x: x is not None, matches))))
+    matches = list(filter(lambda x: x != 0, matches))
+                          
+    for i in matches:
+        x1 ,y1 ,x2 ,y2 = f_non_sig_rewnew[i]
+        cv2.rectangle(img , (x1 , y1) ,(x2 ,y2) , (255 , 255 , 0) , 1)
 
-    return sorted(matches) , loc
+    return sorted(matches) , loc , img
 
-def second(boxes , img , number , FLAG = True):
+def second(boxes , img , number = 0 , Answer = True , ALPHA = 1):
     global f_non_sig , f_non_sig_rewnew
-    if FLAG:
+    if Answer:
         f_non_sig = f_non_sig
     else:
         f_non_sig = f_non_sig_rewnew
@@ -572,7 +571,7 @@ def second(boxes , img , number , FLAG = True):
     mapper = [[0 for _ in range(f_non_sig_len)] for _ in range(len(boxes))]  
 
 
-    for i in f_non_sig.values():
+    for i in f_non_sig_rewnew.values():
         x1 , y1  ,x2 ,y2 = i
         cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 1)
 
@@ -588,32 +587,24 @@ def second(boxes , img , number , FLAG = True):
             if occupancy_rate < 0.3:
                 occupancy_rate = 0
             mapper[col][row] = occupancy_rate
-    # print("입력 처음시작 \n")
-    # print(np.array(mapper))
-    Intersection_dis_mapper = distance_consider(mapper , boxes , FLAG)
-    # print("=========ID MAPPER ======== \n")
-    # print(np.round(Intersection_dis_mapper , 3))
-    # print('====================== 끝 ==================')
-    
-    matches , loc = use_final(Intersection_dis_mapper , boxes)
 
-    # print("==========================================")
-    # print(matches)
-    # print(loc)
-    # print("중복 처리 전 / 후")
-    # matches , _ , loc = step2_loc(matches , mapper , loc)
-    # print(matches)
-    # print(loc)
-    # print("==========================================")
+    Intersection_dis_mapper = distance_consider(mapper , boxes , Answer , ALPHA)
+
+    matches , loc = use_final(Intersection_dis_mapper , boxes)
 
     loc = dict(loc)
     loc = {key + 1 : value for key , value in loc.items()}
     loc = dict(sorted(loc.items()))
     matches = sorted(list(map(lambda x : x+1 , filter(lambda x: x is not None, matches))))
+    matches = list(filter(lambda x: x != 0, matches))
 
-    return sorted(matches)  , loc
+    for i in matches:
+        x1 ,y1 ,x2 ,y2 = f_non_sig_rewnew[i]
+        cv2.rectangle(img , (x1 , y1) ,(x2 ,y2) , (255 , 255 , 0) , 1)
 
-def distance_consider(mapper, p_box , flag):
+    return sorted(matches)  , loc , img
+
+def distance_consider(mapper, p_box , flag , ALPHA):
     # print('================= 거리 측정 ========================')
     global f_non_sig 
 
@@ -636,8 +627,6 @@ def distance_consider(mapper, p_box , flag):
             p_cx, p_cy = (px1 + px2) // 2, py1
             distance = np.sqrt((box_cx - p_cx) ** 2 + (box_cy - p_cy) ** 2)
             distance_mapper[rows][cols] = distance
-
-    print(np.array(distance_mapper ,dtype=np.float32))
     for idx , i in enumerate(distance_mapper):
         max_distance = np.max(i)
         i_list = i
@@ -647,7 +636,7 @@ def distance_consider(mapper, p_box , flag):
     # print("================= 스케일 =====================")
     # print(np.array(distance_mapper))
     # print("=============================================")
-    Alpha = 1  # 교집합 가중치
+    Alpha = ALPHA  # 교집합 가중치
     Epsilon = 1e-6
     mapper = np.array(mapper)
     distance_mapper = np.array(distance_mapper)

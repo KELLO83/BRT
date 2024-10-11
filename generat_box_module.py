@@ -288,7 +288,8 @@ def sit_distinguish(boxes, img , number , image_name):
         x1 , y1 ,x2 , y2 = j
         cv2.rectangle(img , (x1 , y) ,(x2 , y2) , (255,0 , 0) , 1)
 
-        
+
+
 #   flag -> True 기존꺼 
     if boxes:
         print(image_name)
@@ -307,159 +308,11 @@ def sit_distinguish(boxes, img , number , image_name):
             x1 , y1 ,x2 , y2 = s
             cv2.rectangle(img , (x1 , y1) , (x2 , y2) , (255,255 , 0) , 1)
 
-        # save_dir = 'real'
-        # SCEN = os.path.split(image_name)[-2]
-        # name = os.path.basename(image_name)
-        # NAME = SCEN + '_'+ name
-        # full_name = os.path.join(save_dir , NAME)
-        # full_name = os.path.basename(full_name)
-        # os.makedirs(save_dir , exist_ok=True)
-        # cv2.imwrite(os.path.join(save_dir , full_name), img)
-        # if sorted(sit_number) != sorted(T):
-        #     print(sit_number) 
-        #     print(T)
 
         cv2.namedWindow("p",cv2.WINDOW_NORMAL)
         cv2.imshow("p" ,  img)
         cv2.waitKey(0)
 
-
-    # if boxes:
-    #     print(image_name)
-    #     match , loc_o = box_module.second(boxes , img2 , number= 0 , FLAG=True)
-    #     match_re , loc_re = box_module.second(boxes , img2 , number = 0 , FLAG=False) # 박스를 타이트하게 사용
-
-
-    #     print(loc_o)
-    #     print(loc_re)
-
-    #     T = loc_o.keys()
-    #     Q = loc_re.keys()
-        
-
-    #     for i in T:
-    #         s = f_non_sig[i]
-    #         x1 , y1 ,x2 , y2 = s
-    #         cv2.rectangle(img , (x1 , y1) ,(x2 , y2)  , (255,255, 0) , 1)
-
-    #     for i in Q:
-    #         s = f_non_sig_rewnew[i]
-    #         x1 , y1 , x2 , y2 = s
-    #         cv2.rectangle(renew_copy , (x1 , y1) , (x2 , y2) , (255, 255 , 0) , 1)
-            
-    #     # for i in match:
-    #     #     x1 , y1 , x2 , y2 = f_non_sig_rewnew[i]
-    #     #     cv2.rectangle(renew_copy , (x1 , y1) , (x2 ,y2) , (255,255,0) , 1)
-
-    #     cv2.namedWindow("new" , cv2.WINDOW_NORMAL)
-    #     cv2.imshow("new" , renew_copy)
-    #     cv2.namedWindow("ex",cv2.WINDOW_NORMAL)
-    #     cv2.imshow("ex" , img)
-    #     cv2.waitKey(0)
-        
-
-    # else:
-    #     cv2.namedWindow("false" , cv2.WINDOW_NORMAL)
-    #     cv2.imshow("false" , renew_copy)
-    #     cv2.waitKey(0)
-
-
-
-    # if boxes:
-    #     mathces_first  , loc_f = box_module.first(boxes , img2 , number=0)
-    #     matches_second  , loc_s = box_module.second(boxes , img2 , number=0)
-    #     print(loc_f)
-    #     print(loc_s)
-    #     print(image_name)
-
-    #     for i in f_non_sig.values():
-    #         x1 , y1 , x2 , y2 = i
-    #         cv2.rectangle(img  ,(x1 , y1) ,(x2 , y2) , (255,0,0),1)
-    #     cv2.namedWindow("false" , cv2.WINDOW_NORMAL)
-    #     cv2.imshow("false" , img)
-    #     cv2.waitKey(0)
-
-    #     if sorted(mathces_first) != sorted(matches_second):
-    #         cv2.namedWindow("q",cv2.WINDOW_NORMAL)
-    #         cv2.imshow("q",img)
-    #         cv2.waitKey(0)
-        
-
-    #     if number not in mathces_first and number in matches_second:
-    #         pass
-
-    #     if (number in mathces_first and number in matches_second):
-    #         f_value = loc_f[number] 
-    #         s_value = loc_s[number]
-
-    #         if sorted(f_value) != sorted(s_value):
-    #             print(f"{number} 출처가 다름 ")
-    #             signal_not_same +=1
-    #             print(loc_f)
-    #             print(loc_s)
-    #             cv2.namedWindow("t" , cv2.WINDOW_NORMAL)
-    #             cv2.imshow("t" , img)
-    #             cv2.waitKey(0)
-
-    #     if number in mathces_first and number not in matches_second: # 실제로는 사람이있으나 검출을 못하여 x인데 1에서는 사람있다고함
-    #         print("신호 넘어옴")
-    #         false_alarm_count +=1
-    #         print(loc_f)
-    #         print(loc_s)
-    #         cv2.namedWindow("q",cv2.WINDOW_NORMAL)
-    #         cv2.imshow("q",img)
-    #         cv2.waitKey(0)
-        
-        # if number not in mathces_first and number in matches_second:
-        #     print("boxes : " , boxes)
-        #     print(mathces_first)
-        #     print(matches_second)
-        #     U = set(mathces_first).union(set(matches_second))
-        #     A = set(mathces_first)
-        #     B = set(matches_second)
-
-        #     print("A 실제 " , list(U-A))
-        #     print("B 오경보 ", list(U-B))
-
-        #     false_alarm_count += 1
-        #     cv2.namedWindow("false" , cv2.WINDOW_NORMAL)
-        #     cv2.imshow("false" , img)
-        #     cv2.waitKey(0)
-
-        # if sorted(mathces_first) != sorted(matches_second):
-        #     #print("boxes : ",boxes)
-        #     print(mathces_first)
-        #     print(matches_second)
-            
-        #     U = set(mathces_first).union(set(matches_second))
-        #     A = set(mathces_first)
-        #     B = set(matches_second)
-
-        #     print("A 실제 " , U-A)
-        #     print("B 오경보 ", U-B)
-
-        #     T = list(U-B)
-
-        #     for i in T:
-        #         if i == number:
-        #             false_alarm_count += 1
-        #             cv2.namedWindow("false" , cv2.WINDOW_NORMAL)
-        #             cv2.imshow("false" , img)
-        #             cv2.waitKey(0)
-
-            # cv2.namedWindow("t",cv2.WINDOW_NORMAL)
-            # cv2.imshow("t",img)
-            # cv2.waitKey(0)
-
-
-    # if number_list:
-    #     number_list = sorted(number_list)
-    #     print("추가분류..")
-    #     for i , iou in number_list:
-    #         print(f"{i}번쨰 좌석 착석 {round(iou,2)}... (추가분류))") 
-
-    #     print("first : " , mathces_first)
-    #     print("second : " ,matches_second)
 
     print("착석 사람 :",len(sit_number))    
     print("box 총 갯수 :" ,len(boxes_copy))
@@ -509,14 +362,6 @@ def remain_excute(boxes , img , finsied):
             sit_iou.append(best_iou)
 
     return img , sit_list , sit_iou
-
-def check_color_in_image(image, color=(0, 255, 255) , min_count = 5000):
-
-    # 해당 색상이 있는지 확인
-    color_mask = np.all(image == color , axis=-1)
-    count = np.sum(color_mask)
-    return count >= min_count
-
 
 def calculate_intersection_area(box1, box2):
     # 두 박스의 교차 영역 계산
