@@ -46,6 +46,12 @@ class YOLODetector:
         self.not_same_source = 0
 
         self.alpha = alpha
+
+        self.image_error_list = [
+            'cv2_diff_test/front/4.1/image_0229.jpg',
+            'cv2_diff_test/front/4.1/image_0237.jpg' , 
+        ]
+
     def nmx_box_to_cv2_loc(self , boxes):
         x1 , y1 , w, h = boxes
         x2 = x1 + w
@@ -65,6 +71,7 @@ class YOLODetector:
     @timing_decorator
     def run(self):
         for index , i in tqdm(enumerate(self.distortion_list),total=len(self.distortion_list)):
+            image_name = i
             distort_image   = cv2.imread(i , cv2.IMREAD_COLOR)
 
             if distort_image is not None:
@@ -111,32 +118,43 @@ class YOLODetector:
             answer_location = dict(sorted(answer_location.items()))
             compare_location = dict(sorted(compare_location.items()))
             stop_point = False
-            if len(answer) == len(compare_match): # 길이가 같은경우에 대해여
-                for (answer_key , answer_value) , (key , value) in zip(answer_location.items() , compare_location.items()):
-                    if answer_key != key:
-                        self.false_alarm += 1
-                        stop_point = True
 
-                    else: # 좌석 번호는 같은데 출처가 다를떄
-                        if answer_value != value:
-                            self.not_same_source += 1
+            if image_name in self.image_error_list:
+                if image_name != 'cv2_diff_test/front/4.1/image_0237.jpg':
+                    answer = [5 , 7 , 9 , 12 ]
+                else:
+                    answer = [5 , 7 , 9 , 12 , 13]
+                if sorted(answer) != sorted(compare_location.keys()):
+                    self.false_alarm += 1
+                    stop_point = True
+            else:
+                if len(answer) == len(compare_match): # 길이가 같은경우에 대해여
+                    for (answer_key , answer_value) , (key , value) in zip(answer_location.items() , compare_location.items()):
+                        if answer_key != key:
+                            self.false_alarm += 1
                             stop_point = True
 
-            else: # 길이가 다르다면 오경보
-                self.false_alarm += 1
-                stop_point = True
+                        else: # 좌석 번호는 같은데 출처가 다를떄
+                            if answer_value != value:
+                                self.not_same_source += 1
+                                stop_point = True
+
+                else: # 길이가 다르다면 오경보
+                    self.false_alarm += 1
+                    stop_point = True
             
             if stop_point:
+                print("image name : ",image_name)
                 print("출처다름 : ",self.not_same_source)
                 print("오경보 : ",self.false_alarm)
                 print("정답 \n" , answer_location)
                 print(compare_location)
 
-            # cv2.namedWindow("Answer" , cv2.WINDOW_NORMAL)
-            # cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
-            # cv2.imshow("Answer" , ans_img)
-            # cv2.imshow("compare",compare_img)
-            # cv2.waitKey(0)
+        cv2.namedWindow("Answer" , cv2.WINDOW_NORMAL)
+        cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
+        cv2.imshow("Answer" , ans_img)
+        cv2.imshow("compare",compare_img)
+        cv2.waitKey(0)
 
             # if len(answer_location) == len(compare_location):
             #     for (i,v) , (q,r) in zip(answer_location.items() , compare_location.items()):
@@ -166,17 +184,20 @@ if __name__ == "__main__":
     if not distort_images:
         raise FileExistsError
     
-    #distort_images = natsorted(glob(os.path.join("cv2_diff_test/problem" , "*.jpg")))
+    #distort_images = natsorted(glob(os.path.join("cv2_diff_test/pro" , "*.jpg")))
 
 
     errors = []
     import gc
 
-    range_ = np.linspace(0, 0.1 ,5).tolist()
+    range_ = np.linspace(0.1, 1 ,100).tolist()
     # range_ = list(reversed(range_))
     # range_ = list(map (lambda x: round(x,2) , range_))
+
+    #range_ = [0.2 , 0.4 , 0.6 , 0.8 , 1]
+    range_ = [1]
     print(range_)
-    #rannge_ = [1e-3]
+    input("========= continue Press Any key ===============")
     for i in range_:
         c = YOLODetector(distort_images, number, alpha=i)
         f, s = c.run()

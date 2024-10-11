@@ -88,15 +88,15 @@ f_non_sig_rewnew = {
     13: [237, 198, 277, 257],
 }
 
-""" f_non_sig_renew를 의자상반신에서 사람 머리까지 ..."""
-for key in f_non_sig:
-    # f_non_sig에서 y1 값 추출 (두 번째 요소)
-    y1_value = f_non_sig[key][1]
-    # f_non_sig_rewnew에서 해당 키의 y1 값을 f_non_sig의 y1 값으로 수정
-    f_non_sig_rewnew[key][1] = y1_value
+# """ f_non_sig_renew를 의자상반신에서 사람 머리까지 ..."""
+# for key in f_non_sig:
+#     # f_non_sig에서 y1 값 추출 (두 번째 요소)
+#     y1_value = f_non_sig[key][1]
+#     # f_non_sig_rewnew에서 해당 키의 y1 값을 f_non_sig의 y1 값으로 수정
+#     f_non_sig_rewnew[key][1] = y1_value
 
-# 결과 출력
-f_non_sig_rewnew = f_non_sig_rewnew
+# # 결과 출력
+# f_non_sig_rewnew = f_non_sig_rewnew
 
 
 
@@ -289,6 +289,7 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
     else:
         BOX_CORD = f_non_sig_rewnew
 
+
     img = img.copy()
 
     mapper = [[0 for _ in range(len(BOX_CORD))] for _ in range(len(boxes))]  
@@ -322,12 +323,13 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
             mapper[col][row] = occupancy_rate
     
     
-    # print("입력 교집합 :\n",np.array(mapper , dtype=  np.float64))
+    #print("입력 교집합 :\n",np.array(mapper , dtype=  np.float64))
     if Answer:
         Intersection_dis_mapper = distance_consider(mapper , boxes , BOX_CORD , ALPHA = 1)
     else:
-        Intersection_dis_mapper = distance_consider_Weight(mapper , boxes , BOX_CORD , ALPHA)
-    # print("결과 : \n " , Intersection_dis_mapper)
+        #print("input : " , BOX_CORD)
+        Intersection_dis_mapper , img = distance_consider_Weight(mapper , boxes , BOX_CORD , ALPHA , img)
+    #print("결과 : \n " , Intersection_dis_mapper)
 
     matches , loc = use_final(Intersection_dis_mapper , boxes)
 
@@ -345,6 +347,7 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
 
 def distance_consider(mapper, p_box , BOX_CORD , ALPHA):
     # print('================= 거리 측정 ========================')
+
     if ALPHA >1 : 
         ALPHA = 1
 
@@ -366,15 +369,13 @@ def distance_consider(mapper, p_box , BOX_CORD , ALPHA):
             p_cx, p_cy = (px1 + px2) // 2, py1
             distance = np.sqrt((box_cx - p_cx) ** 2 + (box_cy - p_cy) ** 2)
             distance_mapper[rows][cols] = distance
+
     for idx , i in enumerate(distance_mapper):
         max_distance = np.max(i)
         i_list = i
         i_list = list(map(lambda x : x / max_distance if x!=0 else 0 , i_list))
         distance_mapper[idx] = i_list
 
-    # print("================= 스케일 =====================")
-    # print(np.array(distance_mapper))
-    # print("=============================================")
     Alpha = ALPHA  # 교집합 가중치
     Epsilon = 1e-6
     mapper = np.array(mapper)
@@ -389,9 +390,10 @@ def distance_consider(mapper, p_box , BOX_CORD , ALPHA):
 
     return Intersection_Distance_mapper
 
-def distance_consider_Weight(mapper, p_box , flag , ALPHA):
+def distance_consider_Weight(mapper, p_box , flag , ALPHA , img):
     # print('================= 거리 측정 ========================')
     #print("입력 :\n" , np.array(mapper , dtype=np.float64))
+
 
     BOX_CORD = flag
     n_boxes = len(mapper[0])  # 열 방향
@@ -403,7 +405,7 @@ def distance_consider_Weight(mapper, p_box , flag , ALPHA):
 
     assert A.shape == B.shape, f"Shape Not Equal {A.shape} {B.shape}"
 
-    for cols, box in enumerate(f_non_sig.values()):  # 열 방향
+    for cols, box in enumerate(BOX_CORD.values()):  # 열 방향
         x1, y1, x2, y2 = box
         box_cx, box_cy = (x1 + x2) // 2, y1
         for rows, people in enumerate(p_box):  # 행 방향
@@ -412,18 +414,28 @@ def distance_consider_Weight(mapper, p_box , flag , ALPHA):
             distance = np.sqrt((box_cx - p_cx) ** 2 + (box_cy - p_cy) ** 2)
             distance_mapper[rows][cols] = float(distance)
 
-    #print(distance_mapper)
+            cv2.circle(img , (box_cx , box_cy) , 2 ,( 255,255,0), 1)
+            cv2.circle(img , (p_cx , p_cy) , 2 ,(0,0,255) , 1)
+
+            # print(f"{rows}번쨰 사람")
+            # print(f"{box_cx} {box_cy}")
+            # print(f"{p_cx} {p_cy}")
+            # print("dis : " ,distance)
+
+
+    print("정규화 수행전 \n" ,distance_mapper)
     for idx , i in enumerate(distance_mapper):
         max_distance = np.max(i)
         i_list = i
         i_list = list(map(lambda x : x / max_distance if x!=0 else 0 , i_list))
         distance_mapper[idx] = np.array(i_list , dtype=np.float64)
 
+    print("NOR DISTANCE \n ",distance_mapper)
 
-    # print("================= 스케일 =====================")
-    # print(np.array(distance_mapper))
-
-    # print("=============================================")
+    
+    #print("================= 스케일 =====================")
+    #print(np.array(distance_mapper))
+    #print("=============================================")
     Alpha = ALPHA  # 교집합 가중치
     Epsilon = 1e-6
     mapper = np.array(mapper)
@@ -442,7 +454,7 @@ def distance_consider_Weight(mapper, p_box , flag , ALPHA):
         mapper ** Alpha / ((distance_mapper ** (1 - Alpha))) 
     )
 
-    return Intersection_Distance_mapper
+    return Intersection_Distance_mapper , img
 
 
 if __name__ == '__main__':
