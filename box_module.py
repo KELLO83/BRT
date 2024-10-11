@@ -6,8 +6,6 @@ import os
 import collections
 import collections
 
-def scale_coordinates(coordinates, scale):
-    return [int(coord * scale) for coord in coordinates]
 
 def convert_2d(boxes):
     x1 , y1 , w, h = boxes
@@ -86,9 +84,9 @@ f_non_sig_rewnew = f_non_sig_rewnew
 
 
 
-scale_factor = 640 / 600
-f_non_sig = {key : scale_coordinates(value, scale_factor) for key, value in f_non_sig.items()}
-f_non_sig_rewnew = {key : scale_coordinates(value, scale_factor) for key, value in f_non_sig_rewnew.items()}
+# scale_factor = 640 / 600
+# f_non_sig = {key: [int(coord * scale_factor) for coord in value] for key, value in f_non_sig.items()}
+# f_non_sig_rewnew = {key : [int(coord * scale_factor)for coord in value] for key, value in f_non_sig_rewnew.items()}
 
 
 def use_final(mapper, p_boxes): # 검증완료 일단은 ? 이거사용
@@ -138,7 +136,7 @@ def use_final(mapper, p_boxes): # 검증완료 일단은 ? 이거사용
 
     return matches, match_coords
 
-def first(boxes, img, number = 0):
+def first(boxes, img, Answer = False , ALPHA = 1):
     global f_non_sig
 
     f_non_sig_len = len(f_non_sig)  # 박스의 수
@@ -180,7 +178,7 @@ def first(boxes, img, number = 0):
 
     return sorted(matches) , loc , img
 
-def second(boxes , img , number = 0 , Answer = True , ALPHA = 1):
+def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
     global f_non_sig , f_non_sig_rewnew
     if Answer:
         f_non_sig = f_non_sig
@@ -199,7 +197,16 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1):
 
     for i in boxes:
         x1, y1, x2, y2 = i
-        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 1)
+        center_x , center_y = (x1 + x2) // 2 , (y1 + y2) // 2
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 1)
+        cv2.circle(img, (center_x, center_y), 5, (0, 0, 255), -1)  
+        cv2.putText(img, f'({center_x}, {center_y})', 
+                    (center_x, center_y), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    0.3, 
+                    (255, 255, 255), 
+                    1)
+
 
     for row, cordidate in enumerate(f_non_sig.values()):  
         for col, people in enumerate(boxes): 
@@ -209,8 +216,14 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1):
             if occupancy_rate < 0.3:
                 occupancy_rate = 0
             mapper[col][row] = occupancy_rate
-
-    Intersection_dis_mapper = distance_consider(mapper , boxes , Answer , ALPHA)
+    
+    
+    # print("입력 교집합 :\n",np.array(mapper , dtype=  np.float64))
+    if Answer:
+        Intersection_dis_mapper = distance_consider(mapper , boxes , Answer , ALPHA = 1)
+    else:
+        Intersection_dis_mapper = distance_consider_Weight(mapper , boxes , Answer , ALPHA)
+    # print("결과 : \n " , Intersection_dis_mapper)
 
     matches , loc = use_final(Intersection_dis_mapper , boxes)
 
@@ -228,6 +241,8 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1):
 
 def distance_consider(mapper, p_box , flag , ALPHA):
     # print('================= 거리 측정 ========================')
+    if ALPHA >1 : 
+        ALPHA = 1
     global f_non_sig 
 
     if flag == False:
@@ -262,21 +277,75 @@ def distance_consider(mapper, p_box , flag , ALPHA):
     Epsilon = 1e-6
     mapper = np.array(mapper)
     distance_mapper = np.array(distance_mapper)
+    # distance_mapper[mapper ==0 ] = 0
+    assert mapper.shape == distance_mapper.shape, f"{mapper.shape} {distance_mapper.shape}"
+
+ 
+    Intersection_Distance_mapper = np.zeros_like(mapper)
+
+    Intersection_Distance_mapper = (mapper ** ALPHA) / ((distance_mapper ** ALPHA) + Epsilon)
+
+    return Intersection_Distance_mapper
+
+def distance_consider_Weight(mapper, p_box , flag , ALPHA):
+    # print('================= 거리 측정 ========================')
+    #print("입력 :\n" , np.array(mapper , dtype=np.float64))
+    if ALPHA >=1 : 
+        ALPHA = 1
+    global f_non_sig 
+
+    if flag == False:
+        f_non_sig  = f_non_sig_rewnew
+    n_boxes = len(mapper[0])  # 열 방향
+    n_people = len(mapper)    # 행 방향
+
+    distance_mapper = np.array([[0 for _ in range(n_boxes)] for _ in range(n_people)] , dtype=np.float64)
+    A = np.array(mapper)
+    B = np.array(distance_mapper)
+
+    assert A.shape == B.shape, f"Shape Not Equal {A.shape} {B.shape}"
+
+    for cols, box in enumerate(f_non_sig.values()):  # 열 방향
+        x1, y1, x2, y2 = box
+        box_cx, box_cy = (x1 + x2) // 2, y1
+        for rows, people in enumerate(p_box):  # 행 방향
+            px1, py1, px2, py2 = people
+            p_cx, p_cy = (px1 + px2) // 2, py1
+            distance = np.sqrt((box_cx - p_cx) ** 2 + (box_cy - p_cy) ** 2)
+            distance_mapper[rows][cols] = float(distance)
+
+    #print(distance_mapper)
+    for idx , i in enumerate(distance_mapper):
+        max_distance = np.max(i)
+        i_list = i
+        i_list = list(map(lambda x : x / max_distance if x!=0 else 0 , i_list))
+        distance_mapper[idx] = np.array(i_list , dtype=np.float64)
+
+
+    # print("================= 스케일 =====================")
+    # print(np.array(distance_mapper))
+
+    # print("=============================================")
+    Alpha = ALPHA  # 교집합 가중치
+    Epsilon = 1e-6
+    mapper = np.array(mapper)
+    distance_mapper = np.where(distance_mapper == 0 , 1e-12 , distance_mapper)
+
+    distance_mapper = np.array(distance_mapper)
+    distance_mapper[mapper == 0 ] = 0
 
     assert mapper.shape == distance_mapper.shape, f"{mapper.shape} {distance_mapper.shape}"
 
     Intersection_Distance_mapper = np.zeros_like(mapper)
 
-    Intersection_Distance_mapper = mapper * Alpha / (distance_mapper + Epsilon)
-    
-    return Intersection_Distance_mapper
-    # Intersection_Distance_mapper = np.where(
-    #     mapper != 0,
-    #     mapper * Alpha / (distance_mapper + Epsilon),
-    #     0
-    # )
+    Intersection_Distance_mapper = np.where(
+        (mapper == 0) | (distance_mapper == 0), 
+        0,  
+        mapper ** Alpha / ((distance_mapper ** (1 - Alpha))) 
+    )
 
     return Intersection_Distance_mapper
+
 
 if __name__ == '__main__':
     img = np.zeros((600,600),dtype=np.uint8)
@@ -285,9 +354,7 @@ if __name__ == '__main__':
     # print(Q)
     # print(T)
 
-    
-    first(boxes , img , 8 )
-    second(boxes , img , 8 , FLAG=True)
+
     
 """
 5 번째 좌석 착석 ...

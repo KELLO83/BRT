@@ -17,8 +17,27 @@ logging.basicConfig(
 
 logging.info("Yolo Detect run ...")
 
+import time
+import functools
+def timing_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        print("ALPHA : ",args[0].alpha)
+        print(f"Function '{func.__name__}' started at {time.strftime('%H:%M:%S', time.localtime(start_time))}")
+        
+        result = func(*args, **kwargs)
+        
+        end_time = time.time()
+        print(f"Function '{func.__name__}' ended at {time.strftime('%H:%M:%S', time.localtime(end_time))}")
+        print(f"Total execution time: {end_time - start_time:.4f} seconds")
+        
+        return result
+    return wrapper
+
+
 class YOLODetector:
-    def __init__(self, f1 , number ,model_path='yolov8x.pt'):
+    def __init__(self, f1 , number , alpha ,model_path='yolo8x.pt'):
         self.number = number
         self.distortion_list = f1
         self.model = YOLO(model_path).to("cuda")
@@ -26,6 +45,7 @@ class YOLODetector:
         self.false_alarm = 0
         self.not_same_source = 0
 
+        self.alpha = alpha
     def nmx_box_to_cv2_loc(self , boxes):
         x1 , y1 , w, h = boxes
         x2 = x1 + w
@@ -41,7 +61,8 @@ class YOLODetector:
             return [boxes[i] for i in indices.flatten()]
         else:
             return []
-
+        
+    @timing_decorator
     def run(self):
         for index , i in tqdm(enumerate(self.distortion_list),total=len(self.distortion_list)):
             distort_image   = cv2.imread(i , cv2.IMREAD_COLOR)
@@ -59,7 +80,7 @@ class YOLODetector:
 
                 # Apply fisheye_to_plane_info mapping on the newly padded image
                 undisort_image = np.array(fish_map.fisheye_to_plane_info(frame_new, h, w, 180, 90, 640, 0, 0))
-                #undisort_image = cv2.resize(undisort_image, (640, 640), interpolation=cv2.INTER_LANCZOS4)
+                undisort_image = cv2.resize(undisort_image, (640, 640), interpolation=cv2.INTER_LANCZOS4)
 
 
 
@@ -81,10 +102,11 @@ class YOLODetector:
             if not nmx_boxes:
                 self.empty_count +=1
                 continue
-            answer , answer_location , ans_img =  box_module.second(nmx_boxes , undisort_image.copy() , Answer= True , ALPHA = 1)
+            answer , answer_location , ans_img =  box_module.second(nmx_boxes , undisort_image.copy() , Answer= True , ALPHA = 1 )
 
 
-            compare_match , compare_location  , compare_img = box_module.second(nmx_boxes , undisort_image.copy() , Answer= False, ALPHA = 0.5)
+            compare_match , compare_location  , compare_img = box_module.second(nmx_boxes , undisort_image.copy() , Answer= False, ALPHA = self.alpha)
+
 
             answer_location = dict(sorted(answer_location.items()))
             compare_location = dict(sorted(compare_location.items()))
@@ -110,13 +132,26 @@ class YOLODetector:
                 print("정답 \n" , answer_location)
                 print(compare_location)
 
-            # cv2.namedWindow("ans" , cv2.WINDOW_NORMAL)
-            # cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
-            # cv2.imshow("ans" , ans_img)
-            # cv2.imshow("compare",compare_img)
-            # cv2.waitKey(0)
+            cv2.namedWindow("Answer" , cv2.WINDOW_NORMAL)
+            cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
+            cv2.imshow("Answer" , ans_img)
+            cv2.imshow("compare",compare_img)
+            cv2.waitKey(0)
 
-        print("빈이미지" ,self.empty_count)
+            # if len(answer_location) == len(compare_location):
+            #     for (i,v) , (q,r) in zip(answer_location.items() , compare_location.items()):
+            #         if i!=q or v != r:
+            #             self.DEBUG +=1
+            #             break
+            # else:
+            #     self.DEBUG += 1
+
+
+
+
+        return self.false_alarm , self.not_same_source
+
+
 if __name__ == "__main__":
 
     from glob import glob
@@ -133,5 +168,33 @@ if __name__ == "__main__":
     
     #distort_images = natsorted(glob(os.path.join("cv2_diff_test/problem" , "*.jpg")))
 
-    c = YOLODetector( distort_images , number)
-    c.run()
+
+    errors = []
+    import gc
+
+    range_ = np.linspace(0, 1.1 ,3).tolist()
+    # range_ = list(reversed(range_))
+    # range_ = list(map (lambda x: round(x,2) , range_))
+    print(range_)
+    #nge_ = [0.5]
+    for i in range_:
+        c = YOLODetector(distort_images, number, alpha=i)
+        f, s = c.run()
+
+        with open('new.txt', 'a+') as file:
+            file.write(f"step : {i:.1e} {f} {s} \n")
+
+        error = f + s
+        errors.append(error)
+        del c
+        gc.collect()
+
+
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(12, 12))
+    plt.plot(range_ , errors, label='Error over alpha' , color = 'red')
+    plt.xlabel('Alpha')
+    plt.ylabel('Error')
+    plt.title('Error vs Alpha')
+    plt.legend()
+    plt.show()
