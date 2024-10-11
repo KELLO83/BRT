@@ -132,11 +132,11 @@ class YOLODetector:
                 print("정답 \n" , answer_location)
                 print(compare_location)
 
-            cv2.namedWindow("Answer" , cv2.WINDOW_NORMAL)
-            cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
-            cv2.imshow("Answer" , ans_img)
-            cv2.imshow("compare",compare_img)
-            cv2.waitKey(0)
+            # cv2.namedWindow("Answer" , cv2.WINDOW_NORMAL)
+            # cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
+            # cv2.imshow("Answer" , ans_img)
+            # cv2.imshow("compare",compare_img)
+            # cv2.waitKey(0)
 
             # if len(answer_location) == len(compare_location):
             #     for (i,v) , (q,r) in zip(answer_location.items() , compare_location.items()):
@@ -172,11 +172,11 @@ if __name__ == "__main__":
     errors = []
     import gc
 
-    range_ = np.linspace(0, 1.1 ,3).tolist()
+    range_ = np.linspace(0, 0.1 ,5).tolist()
     # range_ = list(reversed(range_))
     # range_ = list(map (lambda x: round(x,2) , range_))
     print(range_)
-    #nge_ = [0.5]
+    #rannge_ = [1e-3]
     for i in range_:
         c = YOLODetector(distort_images, number, alpha=i)
         f, s = c.run()

@@ -56,22 +56,39 @@ f_non_sig = {
     13: [246, 174, 285, 219],
 }
 
+# f_non_sig_rewnew = { # 핏 + 헤드포함
+#     1: [410, 410, 519, 639],
+#     2 : [520,411,639,639],
+#     3: [373, 297, 452, 467],
+#     4: [453, 297, 526, 467],
+#     5: [364, 237, 420, 351],
+#     6: [421, 237, 475, 351],
+#     7: [352, 205, 394, 295],
+#     8: [395, 205, 443, 295],
+#     9 : [170, 242, 232, 371],  
+#     10 : [220,218 ,265,310 ],
+#     11: [346, 180, 383 ,247],  
+#     12: [384, 180, 417, 247],
+#     13: [237, 199, 277, 257], 
+# }
+
 f_non_sig_rewnew = {
     1: [410, 410, 519, 639],
-    2 : [520,411,639,639],
+    2: [520, 411, 639, 639],
     3: [373, 297, 452, 467],
     4: [453, 297, 526, 467],
     5: [364, 237, 420, 351],
     6: [421, 237, 475, 351],
     7: [352, 205, 394, 295],
     8: [395, 205, 443, 295],
-    9 : [170, 242, 232, 371],  
-    10 : [220,218 ,265,310 ],
-    11: [346, 180, 383 ,247],  
-    12: [384, 180, 417, 247],
-    13: [237, 199, 277, 257], 
+    9: [170, 242, 232, 371],  
+    10: [220, 214, 265, 310],
+    11: [346, 184, 383, 247],  
+    12: [384, 184, 417, 247],
+    13: [237, 198, 277, 257],
 }
 
+""" f_non_sig_renew를 의자상반신에서 사람 머리까지 ..."""
 for key in f_non_sig:
     # f_non_sig에서 y1 값 추출 (두 번째 요소)
     y1_value = f_non_sig[key][1]
@@ -88,6 +105,93 @@ f_non_sig_rewnew = f_non_sig_rewnew
 # f_non_sig = {key: [int(coord * scale_factor) for coord in value] for key, value in f_non_sig.items()}
 # f_non_sig_rewnew = {key : [int(coord * scale_factor)for coord in value] for key, value in f_non_sig_rewnew.items()}
 
+def gale(mapper, p_boxes):
+    """
+    Matching boxes to people using the Gale-Shapley algorithm (stable matching).
+    The preference scores are stored in 'mapper'.
+    """
+    n_people = len(mapper)  # Number of people
+    n_boxes = len(mapper[0])  # Number of boxes
+
+    # Generate preference lists for people based on scores
+    person_prefs = []
+    for person_idx in range(n_people):
+        scores = mapper[person_idx]
+        prefs = [(box_idx, scores[box_idx]) for box_idx in range(n_boxes) if scores[box_idx] >= 0.3]
+        # Sort preferences by decreasing score
+        prefs.sort(key=lambda x: x[1], reverse=True)
+        # Keep only the box indices
+        prefs = [box_idx for box_idx, score in prefs]
+        person_prefs.append(prefs)
+
+    # Generate preference lists for boxes based on scores
+    box_prefs = []
+    for box_idx in range(n_boxes):
+        scores = [mapper[person_idx][box_idx] for person_idx in range(n_people)]
+        prefs = [(person_idx, scores[person_idx]) for person_idx in range(n_people) if scores[person_idx] >= 0.3]
+        # Sort preferences by decreasing score
+        prefs.sort(key=lambda x: x[1], reverse=True)
+        # Keep only the person indices
+        prefs = [person_idx for person_idx, score in prefs]
+        box_prefs.append(prefs)
+
+    # Initialize the matching process
+    next_proposal = [0] * n_people  # Next box to propose to for each person
+    engaged_boxes = [None] * n_boxes  # Current person engaged to each box
+    free_people = [person_idx for person_idx in range(n_people) if person_prefs[person_idx]]
+
+    while free_people:
+        person_idx = free_people.pop(0)  # Get a free person
+
+        # Check if person has any boxes left to propose to
+        if next_proposal[person_idx] >= len(person_prefs[person_idx]):
+            # Person has proposed to all boxes, cannot be matched
+            continue
+
+        # Get the next box to propose to
+        box_idx = person_prefs[person_idx][next_proposal[person_idx]]
+        next_proposal[person_idx] += 1
+
+        # Person proposes to box
+        # Box considers the proposal
+        current_engaged = engaged_boxes[box_idx]
+
+        # Get box's preference list
+        box_pref_list = box_prefs[box_idx]
+
+        # If box is free
+        if current_engaged is None:
+            # Engage person and box
+            engaged_boxes[box_idx] = person_idx
+        else:
+            # Decide whether to accept new proposer or stay with current
+            if person_idx in box_pref_list:
+                current_engaged_rank = box_pref_list.index(current_engaged) if current_engaged in box_pref_list else len(box_pref_list)
+                new_proposer_rank = box_pref_list.index(person_idx)
+
+                if new_proposer_rank < current_engaged_rank:
+                    # Box prefers new proposer
+                    # Break engagement with current person
+                    free_people.append(current_engaged)
+                    # Engage new person
+                    engaged_boxes[box_idx] = person_idx
+                else:
+                    # Box rejects new proposer
+                    free_people.append(person_idx)
+            else:
+                # Box rejects new proposer
+                free_people.append(person_idx)
+
+    # Build matches and match_coords
+    matches = [None] * n_people  # matches[person_idx] = box_idx
+    match_coords = []
+
+    for box_idx, person_idx in enumerate(engaged_boxes):
+        if person_idx is not None:
+            matches[person_idx] = box_idx
+            match_coords.append([box_idx, p_boxes[person_idx]])
+
+    return matches, match_coords
 
 def use_final(mapper, p_boxes): # 검증완료 일단은 ? 이거사용
     """
@@ -180,22 +284,21 @@ def first(boxes, img, Answer = False , ALPHA = 1):
 
 def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
     global f_non_sig , f_non_sig_rewnew
-    if Answer:
-        f_non_sig = f_non_sig
+    if  Answer:
+        BOX_CORD = f_non_sig
     else:
-        f_non_sig = f_non_sig_rewnew
+        BOX_CORD = f_non_sig_rewnew
 
-    f_non_sig_len = len(f_non_sig)  # 박스의 수
     img = img.copy()
 
-    mapper = [[0 for _ in range(f_non_sig_len)] for _ in range(len(boxes))]  
+    mapper = [[0 for _ in range(len(BOX_CORD))] for _ in range(len(boxes))]  
 
 
-    for i in f_non_sig_rewnew.values():
+    for i in BOX_CORD.values():
         x1 , y1  ,x2 ,y2 = i
         cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 1)
 
-    for i in boxes:
+    for idx , i in enumerate(boxes):
         x1, y1, x2, y2 = i
         center_x , center_y = (x1 + x2) // 2 , (y1 + y2) // 2
         cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 1)
@@ -206,9 +309,10 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
                     0.3, 
                     (255, 255, 255), 
                     1)
+        cv2.putText(img , f"{idx}" ,(x1 , y1) , cv2.FONT_HERSHEY_SCRIPT_COMPLEX , 0.3 ,(0,0,255),1)
 
 
-    for row, cordidate in enumerate(f_non_sig.values()):  
+    for row, cordidate in enumerate(BOX_CORD.values()):  
         for col, people in enumerate(boxes): 
             focuse_area_area = calculate_area(cordidate)
             intersection_area = calculate_intersection_area(people, cordidate)
@@ -220,9 +324,9 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
     
     # print("입력 교집합 :\n",np.array(mapper , dtype=  np.float64))
     if Answer:
-        Intersection_dis_mapper = distance_consider(mapper , boxes , Answer , ALPHA = 1)
+        Intersection_dis_mapper = distance_consider(mapper , boxes , BOX_CORD , ALPHA = 1)
     else:
-        Intersection_dis_mapper = distance_consider_Weight(mapper , boxes , Answer , ALPHA)
+        Intersection_dis_mapper = distance_consider_Weight(mapper , boxes , BOX_CORD , ALPHA)
     # print("결과 : \n " , Intersection_dis_mapper)
 
     matches , loc = use_final(Intersection_dis_mapper , boxes)
@@ -234,19 +338,17 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
     matches = list(filter(lambda x: x != 0, matches))
 
     for i in matches:
-        x1 ,y1 ,x2 ,y2 = f_non_sig_rewnew[i]
+        x1 ,y1 ,x2 ,y2 = BOX_CORD[i]
         cv2.rectangle(img , (x1 , y1) ,(x2 ,y2) , (255 , 255 , 0) , 1)
 
     return sorted(matches)  , loc , img
 
-def distance_consider(mapper, p_box , flag , ALPHA):
+def distance_consider(mapper, p_box , BOX_CORD , ALPHA):
     # print('================= 거리 측정 ========================')
     if ALPHA >1 : 
         ALPHA = 1
-    global f_non_sig 
 
-    if flag == False:
-        f_non_sig  = f_non_sig_rewnew
+
     n_boxes = len(mapper[0])  # 열 방향
     n_people = len(mapper)    # 행 방향
 
@@ -256,7 +358,7 @@ def distance_consider(mapper, p_box , flag , ALPHA):
 
     assert A.shape == B.shape, f"Shape Not Equal {A.shape} {B.shape}"
 
-    for cols, box in enumerate(f_non_sig.values()):  # 열 방향
+    for cols, box in enumerate(BOX_CORD.values()):  # 열 방향
         x1, y1, x2, y2 = box
         box_cx, box_cy = (x1 + x2) // 2, y1
         for rows, people in enumerate(p_box):  # 행 방향
@@ -290,12 +392,8 @@ def distance_consider(mapper, p_box , flag , ALPHA):
 def distance_consider_Weight(mapper, p_box , flag , ALPHA):
     # print('================= 거리 측정 ========================')
     #print("입력 :\n" , np.array(mapper , dtype=np.float64))
-    if ALPHA >=1 : 
-        ALPHA = 1
-    global f_non_sig 
 
-    if flag == False:
-        f_non_sig  = f_non_sig_rewnew
+    BOX_CORD = flag
     n_boxes = len(mapper[0])  # 열 방향
     n_people = len(mapper)    # 행 방향
 
@@ -349,11 +447,19 @@ def distance_consider_Weight(mapper, p_box , flag , ALPHA):
 
 if __name__ == '__main__':
     img = np.zeros((600,600),dtype=np.uint8)
-    boxes = [[159, 240, 255, 427], [341, 232, 434, 399], [222, 175, 283, 283], [332, 80, 346, 113], [339, 174, 388, 269], [339, 212, 395, 318]]
-    # Q, T = first(boxes , img , 8)
-    # print(Q)
-    # print(T)
-
+    cord = [[159, 240, 255, 427], [341, 232, 434, 399], [222, 175, 283, 283], [332, 80, 346, 113], [339, 174, 388, 269], [339, 212, 395, 318]]
+    boxes = [[0,0,0,0,0,0,0,0,16.733,4.5231,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,9.3752],
+    [0,0,0,0,0,0,0,0,0,0,0,13.172,0],
+    [0,0,0,0,0,0,0,0,0,0,0,0,0],
+    [0,0,0,0,0,0,0,0,0,11.931,0,0,29.844]]
+    
+    matches , cords = gale(boxes ,cord )
+    print(np.array(boxes , dtype=np.int64))
+    print('==========================')
+    print(matches)
+    print(cords)
 
     
 """
