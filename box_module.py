@@ -102,24 +102,24 @@ head_top = {
     13: [237, 174, 277, 244],
 }
 
-# 의자 상반신을 맞추고  x 좌우값을 정답박스 사용
-for key , index in f_non_sig_rewnew.items():
-    x1 , y1 ,x2 , y2 = index
-    if key <=8:
-        X1 , Y1 ,X2 , Y2 = head_top[key]
-        if key % 2 !=0:
-            f_non_sig_rewnew[key] =  x1 , y1 , x2 , Y2
+# # 의자 상반신을 맞추고  x 좌우값을 정답박스 사용
+# for key , index in f_non_sig_rewnew.items():
+#     x1 , y1 ,x2 , y2 = index
+#     if key <=8:
+#         X1 , Y1 ,X2 , Y2 = head_top[key]
+#         if key % 2 !=0:
+#             f_non_sig_rewnew[key] =  x1 , y1 , x2 , Y2
 
-        else:
-            f_non_sig_rewnew[key] = x1 , y1 , x2 ,Y2
+#         else:
+#             f_non_sig_rewnew[key] = x1 , y1 , x2 ,Y2
 
-    if key in [12,13]:
-        X1 , Y1 ,X2 , Y2 =  head_top[key]
-        if key % 2 ==0:
-            f_non_sig_rewnew[key] =  x1 , y1 , x2 , Y2
+#     if key in [12,13]:
+#         X1 , Y1 ,X2 , Y2 =  head_top[key]
+#         if key % 2 ==0:
+#             f_non_sig_rewnew[key] =  x1 , y1 , x2 , Y2
 
-        else:
-            f_non_sig_rewnew[key] = x1 , y1 , x2 ,Y2
+#         else:
+#             f_non_sig_rewnew[key] = x1 , y1 , x2 ,Y2
 
 
 for key , index in f_non_sig_rewnew.items():
