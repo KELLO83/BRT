@@ -109,6 +109,7 @@ class YOLODetector:
             if not nmx_boxes:
                 self.empty_count +=1
                 continue
+
             answer , answer_location , ans_img =  box_module.second(nmx_boxes , undisort_image.copy() , Answer= True , ALPHA = 1 )
 
 
@@ -120,26 +121,27 @@ class YOLODetector:
             stop_point = False
 
             if image_name in self.image_error_list:
-                if image_name != 'cv2_diff_test/front/4.1/image_0237.jpg':
+                if image_name == 'cv2_diff_test/front/4.1/image_0229.jpg':
                     answer = [5 , 7 , 9 , 12 ]
                 else:
-                    answer = [5 , 7 , 9 , 12 , 13]
+                    answer = [5 , 7 , 9 , 12 ,13 ]
                 if sorted(answer) != sorted(compare_location.keys()):
                     self.false_alarm += 1
                     stop_point = True
+
             else:
-                if len(answer) == len(compare_match): # 길이가 같은경우에 대해여
-                    for (answer_key , answer_value) , (key , value) in zip(answer_location.items() , compare_location.items()):
-                        if answer_key != key:
+                if len(answer_location) == len(compare_location):  # 길이가 같은 경우
+                    for answer_key in answer_location:
+                        if answer_key not in compare_location:  # 키가 다르면 오경보 처리
                             self.false_alarm += 1
                             stop_point = True
-
-                        else: # 좌석 번호는 같은데 출처가 다를떄
-                            if answer_value != value:
+                            break
+                        else:  # 키가 같다면 값 비교
+                            if answer_location[answer_key] != compare_location[answer_key]:
                                 self.not_same_source += 1
                                 stop_point = True
-
-                else: # 길이가 다르다면 오경보
+                                break
+                else:  # 길이가 다르면 오경보 처리
                     self.false_alarm += 1
                     stop_point = True
             
@@ -150,21 +152,11 @@ class YOLODetector:
                 print("정답 \n" , answer_location)
                 print(compare_location)
 
-        cv2.namedWindow("Answer" , cv2.WINDOW_NORMAL)
-        cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
-        cv2.imshow("Answer" , ans_img)
-        cv2.imshow("compare",compare_img)
-        cv2.waitKey(0)
-
-            # if len(answer_location) == len(compare_location):
-            #     for (i,v) , (q,r) in zip(answer_location.items() , compare_location.items()):
-            #         if i!=q or v != r:
-            #             self.DEBUG +=1
-            #             break
-            # else:
-            #     self.DEBUG += 1
-
-
+            # cv2.namedWindow("Answer" , cv2.WINDOW_NORMAL)
+            # cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
+            # cv2.imshow("Answer" , ans_img)
+            # cv2.imshow("compare",compare_img)
+            # cv2.waitKey(0)
 
 
         return self.false_alarm , self.not_same_source
@@ -184,25 +176,25 @@ if __name__ == "__main__":
     if not distort_images:
         raise FileExistsError
     
-    #distort_images = natsorted(glob(os.path.join("cv2_diff_test/pro" , "*.jpg")))
+    #distort_images = natsorted(glob(os.path.join("cv2_diff_test/problem" , "*.jpg")))
 
 
     errors = []
     import gc
 
-    range_ = np.linspace(0.1, 1 ,100).tolist()
+    range_ = np.linspace(0, 1 ,6)
     # range_ = list(reversed(range_))
     # range_ = list(map (lambda x: round(x,2) , range_))
 
-    #range_ = [0.2 , 0.4 , 0.6 , 0.8 , 1]
-    range_ = [1]
+    #range_ = [ 0.6 , 0.8 , 1]
+    #range_ = [0.3]
     print(range_)
     input("========= continue Press Any key ===============")
     for i in range_:
         c = YOLODetector(distort_images, number, alpha=i)
         f, s = c.run()
 
-        with open('new.txt', 'a+') as file:
+        with open('q.txt', 'a+') as file:
             file.write(f"step : {i:.1e} {f} {s} \n")
 
         error = f + s
@@ -211,11 +203,11 @@ if __name__ == "__main__":
         gc.collect()
 
 
-    import matplotlib.pyplot as plt
-    plt.figure(figsize=(12, 12))
-    plt.plot(range_ , errors, label='Error over alpha' , color = 'red')
-    plt.xlabel('Alpha')
-    plt.ylabel('Error')
-    plt.title('Error vs Alpha')
-    plt.legend()
-    plt.show()
+    # import matplotlib.pyplot as plt
+    # plt.figure(figsize=(12, 12))
+    # plt.plot(range_ , errors, label='Error over alpha' , color = 'red')
+    # plt.xlabel('Alpha')
+    # plt.ylabel('Error')
+    # plt.title('Error vs Alpha')
+    # plt.legend()
+    # plt.show()

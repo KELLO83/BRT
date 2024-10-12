@@ -22,7 +22,7 @@ def calc_sit_count(sit_number):
         if target in sit_count:
             sit_count[target] += 1
 
-def calculate_intersection_area(box1, box2):
+def calculate_intersection_area(box1 , box2 , img):
 
     x_left = max(box1[0], box2[0])
     y_top = max(box1[1], box2[1])
@@ -30,8 +30,9 @@ def calculate_intersection_area(box1, box2):
     y_bottom = min(box1[3], box2[3])
 
     if x_right < x_left or y_bottom < y_top:
-        return 0.0
-    return (x_right - x_left) * (y_bottom - y_top)
+        return 0.0 , img
+    
+    return (x_right - x_left) * (y_bottom - y_top) , img
 
 def calculate_area(box):
     return (box[2] - box[0]) * (box[3] - box[1])
@@ -40,7 +41,7 @@ def calculate_area(box):
 sit_count = {key : 0 for key in range(1, 14)}
 sit_count_old = {key : 0 for key in range(1,14)}
 
-f_non_sig = {
+f_non_sig = { # 정답지로 사용하고있는 박스
     1: [376, 405, 587, 638],
     2 : [520,411,639,639],
     3: [356, 293, 468, 519],
@@ -55,24 +56,7 @@ f_non_sig = {
     12: [381, 166, 419, 235],
     13: [246, 174, 285, 219],
 }
-
-# f_non_sig_rewnew = { # 핏 + 헤드포함
-#     1: [410, 410, 519, 639],
-#     2 : [520,411,639,639],
-#     3: [373, 297, 452, 467],
-#     4: [453, 297, 526, 467],
-#     5: [364, 237, 420, 351],
-#     6: [421, 237, 475, 351],
-#     7: [352, 205, 394, 295],
-#     8: [395, 205, 443, 295],
-#     9 : [170, 242, 232, 371],  
-#     10 : [220,218 ,265,310 ],
-#     11: [346, 180, 383 ,247],  
-#     12: [384, 180, 417, 247],
-#     13: [237, 199, 277, 257], 
-# }
-
-f_non_sig_rewnew = {
+f_non_sig_rewnew = { # 좌석에 맞추어진 박스
     1: [410, 410, 519, 639],
     2: [520, 411, 639, 639],
     3: [373, 297, 452, 467],
@@ -97,6 +81,65 @@ f_non_sig_rewnew = {
 
 # # 결과 출력
 # f_non_sig_rewnew = f_non_sig_rewnew
+
+
+""" 
+머리 + 상반
+"""
+head_top = {
+    1: [410, 405, 519, 560],
+    2: [520, 411, 639, 560],
+    3: [373, 293, 452, 410],
+    4: [453, 289, 526, 410],
+    5: [364, 235, 420, 336],
+    6: [421, 233, 475, 336],
+    7: [352, 195, 394, 280],
+    8: [395, 203, 443, 280],
+    9: [170, 218, 232, 335],
+    10: [220, 190, 265, 276],
+    11: [346, 166, 383, 244],
+    12: [384, 166, 417, 244],
+    13: [237, 174, 277, 244],
+}
+
+# 의자 상반신을 맞추고  x 좌우값을 정답박스 사용
+for key , index in f_non_sig_rewnew.items():
+    x1 , y1 ,x2 , y2 = index
+    if key <=8:
+        X1 , Y1 ,X2 , Y2 = head_top[key]
+        if key % 2 !=0:
+            f_non_sig_rewnew[key] =  x1 , y1 , x2 , Y2
+
+        else:
+            f_non_sig_rewnew[key] = x1 , y1 , x2 ,Y2
+
+    if key in [12,13]:
+        X1 , Y1 ,X2 , Y2 =  head_top[key]
+        if key % 2 ==0:
+            f_non_sig_rewnew[key] =  x1 , y1 , x2 , Y2
+
+        else:
+            f_non_sig_rewnew[key] = x1 , y1 , x2 ,Y2
+
+
+for key , index in f_non_sig_rewnew.items():
+    x1 , y1 ,x2 , y2 = index
+    if key in [1,2]:
+        f_non_sig_rewnew[key] = x1 , y1-5  , x2 , y2
+    
+    if key in [3,4]:
+        f_non_sig_rewnew[key] = x1 , y1-10 ,x2 , y2
+
+    if key in [5,6,9]:
+        f_non_sig_rewnew[key] = x1 , y1-15  , x2 , y2
+
+    if key in [7,8,10]:
+        f_non_sig_rewnew[key] = x1 , y1-20, x2 , y2
+
+    if key in [11,12,13]:
+        f_non_sig_rewnew[key] = x1 , y1-25 , x2 , y2
+
+
 
 
 
@@ -283,6 +326,7 @@ def first(boxes, img, Answer = False , ALPHA = 1):
     return sorted(matches) , loc , img
 
 def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
+    #print(" ================= 정답지 =============================")
     global f_non_sig , f_non_sig_rewnew
     if  Answer:
         BOX_CORD = f_non_sig
@@ -312,22 +356,20 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
                     1)
         cv2.putText(img , f"{idx}" ,(x1 , y1) , cv2.FONT_HERSHEY_SCRIPT_COMPLEX , 0.3 ,(0,0,255),1)
 
-
+    
     for row, cordidate in enumerate(BOX_CORD.values()):  
         for col, people in enumerate(boxes): 
             focuse_area_area = calculate_area(cordidate)
-            intersection_area = calculate_intersection_area(people, cordidate)
+            intersection_area , img = calculate_intersection_area(people, cordidate , img)
             occupancy_rate = intersection_area / focuse_area_area if focuse_area_area > 0 else 0
             if occupancy_rate < 0.3:
                 occupancy_rate = 0
             mapper[col][row] = occupancy_rate
-    
-    
-    #print("입력 교집합 :\n",np.array(mapper , dtype=  np.float64))
+
+    #print("교집합영역 :\n",np.array(mapper , dtype=  np.float64))
     if Answer:
         Intersection_dis_mapper = distance_consider(mapper , boxes , BOX_CORD , ALPHA = 1)
     else:
-        #print("input : " , BOX_CORD)
         Intersection_dis_mapper , img = distance_consider_Weight(mapper , boxes , BOX_CORD , ALPHA , img)
     #print("결과 : \n " , Intersection_dis_mapper)
 
@@ -348,8 +390,8 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
 def distance_consider(mapper, p_box , BOX_CORD , ALPHA):
     # print('================= 거리 측정 ========================')
 
-    if ALPHA >1 : 
-        ALPHA = 1
+
+    ALPHA = 1
 
 
     n_boxes = len(mapper[0])  # 열 방향
@@ -376,10 +418,12 @@ def distance_consider(mapper, p_box , BOX_CORD , ALPHA):
         i_list = list(map(lambda x : x / max_distance if x!=0 else 0 , i_list))
         distance_mapper[idx] = i_list
 
+    #print("정답 거리 \n",np.array(distance_mapper)) 
     Alpha = ALPHA  # 교집합 가중치
     Epsilon = 1e-6
     mapper = np.array(mapper)
     distance_mapper = np.array(distance_mapper)
+    # print("정답 스케일 거리 \n ", distance_mapper)
     # distance_mapper[mapper ==0 ] = 0
     assert mapper.shape == distance_mapper.shape, f"{mapper.shape} {distance_mapper.shape}"
 
@@ -390,59 +434,48 @@ def distance_consider(mapper, p_box , BOX_CORD , ALPHA):
 
     return Intersection_Distance_mapper
 
-def distance_consider_Weight(mapper, p_box , flag , ALPHA , img):
-    # print('================= 거리 측정 ========================')
+def distance_consider_Weight(mapper, p_box , BOX_CORD , ALPHA , img):
+    #print('================= 거리 측정 ========================')
     #print("입력 :\n" , np.array(mapper , dtype=np.float64))
 
 
-    BOX_CORD = flag
     n_boxes = len(mapper[0])  # 열 방향
     n_people = len(mapper)    # 행 방향
 
     distance_mapper = np.array([[0 for _ in range(n_boxes)] for _ in range(n_people)] , dtype=np.float64)
-    A = np.array(mapper)
-    B = np.array(distance_mapper)
+    mapper = np.array(mapper)
 
-    assert A.shape == B.shape, f"Shape Not Equal {A.shape} {B.shape}"
+    assert mapper.shape == distance_mapper.shape, f"Shape Not Equal {mapper.shape} {distance_mapper.shape}"
 
     for cols, box in enumerate(BOX_CORD.values()):  # 열 방향
-        x1, y1, x2, y2 = box
+        x1, y1, x2, _ = box
         box_cx, box_cy = (x1 + x2) // 2, y1
         for rows, people in enumerate(p_box):  # 행 방향
-            px1, py1, px2, py2 = people
+            px1, py1, px2, _ = people
             p_cx, p_cy = (px1 + px2) // 2, py1
             distance = np.sqrt((box_cx - p_cx) ** 2 + (box_cy - p_cy) ** 2)
             distance_mapper[rows][cols] = float(distance)
 
-            cv2.circle(img , (box_cx , box_cy) , 2 ,( 255,255,0), 1)
-            cv2.circle(img , (p_cx , p_cy) , 2 ,(0,0,255) , 1)
-
-            # print(f"{rows}번쨰 사람")
-            # print(f"{box_cx} {box_cy}")
-            # print(f"{p_cx} {p_cy}")
-            # print("dis : " ,distance)
-
-
-    print("정규화 수행전 \n" ,distance_mapper)
+            cv2.circle(img , (box_cx , box_cy) , 1 ,( 255,255,0), -1)
+            cv2.circle(img , (p_cx , p_cy) , 1 ,(0,0,255 ) , -1)
+   # print(distance_mapper , end='\n\n')
     for idx , i in enumerate(distance_mapper):
         max_distance = np.max(i)
         i_list = i
         i_list = list(map(lambda x : x / max_distance if x!=0 else 0 , i_list))
         distance_mapper[idx] = np.array(i_list , dtype=np.float64)
 
-    print("NOR DISTANCE \n ",distance_mapper)
-
-    
-    #print("================= 스케일 =====================")
-    #print(np.array(distance_mapper))
-    #print("=============================================")
-    Alpha = ALPHA  # 교집합 가중치
+   # print(distance_mapper)
+    #print('==================================================================')
+    Alpha = ALPHA 
     Epsilon = 1e-6
     mapper = np.array(mapper)
-    distance_mapper = np.where(distance_mapper == 0 , 1e-12 , distance_mapper)
 
-    distance_mapper = np.array(distance_mapper)
+    distance_mapper = np.where(mapper == 0 , 0 , distance_mapper)
     distance_mapper[mapper == 0 ] = 0
+    distance_mapper[distance_mapper == 0] = 1e-12
+    distance_mapper = np.array(distance_mapper)
+
 
     assert mapper.shape == distance_mapper.shape, f"{mapper.shape} {distance_mapper.shape}"
 
