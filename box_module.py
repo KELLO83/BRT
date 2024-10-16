@@ -72,7 +72,8 @@ f_non_sig_rewnew = { # 좌석에 맞추어진 박스
     13: [237, 198, 277, 257],
 }
 
-# """ f_non_sig_renew를 의자상반신에서 사람 머리까지 ..."""
+Q = f_non_sig_rewnew.copy()
+# """ f_non_sig_renew를 사람 머리까지 ..."""
 # for key in f_non_sig:
 #     # f_non_sig에서 y1 값 추출 (두 번째 요소)
 #     y1_value = f_non_sig[key][1]
@@ -102,7 +103,7 @@ head_top = {
     13: [237, 174, 277, 244],
 }
 
-# # 의자 상반신을 맞추고  x 좌우값을 정답박스 사용
+# # 의자 상반신을 맞춤
 # for key , index in f_non_sig_rewnew.items():
 #     x1 , y1 ,x2 , y2 = index
 #     if key <=8:
@@ -114,16 +115,19 @@ head_top = {
 #             f_non_sig_rewnew[key] = x1 , y1 , x2 ,Y2
 
 #     if key in [12,13]:
-#         X1 , Y1 ,X2 , Y2 =  head_top[key]
+#         X1 , Y1 , X2 , Y2 =  head_top[key]
 #         if key % 2 ==0:
 #             f_non_sig_rewnew[key] =  x1 , y1 , x2 , Y2
 
 #         else:
-#             f_non_sig_rewnew[key] = x1 , y1 , x2 ,Y2
+#             f_non_sig_rewnew[key] = x1 , y1 , x2 , Y2
 
 
 for key , index in f_non_sig_rewnew.items():
     x1 , y1 ,x2 , y2 = index
+    # gap = abs(y2 - y1)
+    # gap = gap / 10
+    # y1 = int(y1 - gap * 2)
     if key in [1,2]:
         f_non_sig_rewnew[key] = x1 , y1-5  , x2 , y2
     
@@ -132,7 +136,7 @@ for key , index in f_non_sig_rewnew.items():
 
     if key in [5,6,9]:
         f_non_sig_rewnew[key] = x1 , y1-15  , x2 , y2
-
+        
     if key in [7,8,10]:
         f_non_sig_rewnew[key] = x1 , y1-20, x2 , y2
 
@@ -339,24 +343,50 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
     mapper = [[0 for _ in range(len(BOX_CORD))] for _ in range(len(boxes))]  
 
 
-    for i in BOX_CORD.values():
+    for index , i in enumerate(f_non_sig_rewnew.values()):
         x1 , y1  ,x2 ,y2 = i
-        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 1)
-
-    for idx , i in enumerate(boxes):
-        x1, y1, x2, y2 = i
-        center_x , center_y = (x1 + x2) // 2 , (y1 + y2) // 2
-        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 1)
-        cv2.circle(img, (center_x, center_y), 5, (0, 0, 255), -1)  
-        cv2.putText(img, f'({center_x}, {center_y})', 
-                    (center_x, center_y), 
-                    cv2.FONT_HERSHEY_SIMPLEX, 
-                    0.3, 
-                    (255, 255, 255), 
-                    1)
-        cv2.putText(img , f"{idx}" ,(x1 , y1) , cv2.FONT_HERSHEY_SCRIPT_COMPLEX , 0.3 ,(0,0,255),1)
-
+        
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(
+            img,  # 이미지
+            f"{index + 1}",  # 텍스트
+            (x1 + 10, y1 + 20),  # 우측 상단에서 약간의 패딩을 준 위치
+            cv2.FONT_HERSHEY_DUPLEX,  # 글꼴
+            0.6,  # 글자 크기
+            (0, 255, 0),  # 초록색 (BGR 형식으로 설정)
+            1  # 글자 두께
+        )
     
+    TMP = [[324,162,381,244],[324,162,377,307],[236,183,285,295],[232,175,275,225]]
+    #Q = [[236,183,285,295],[232,175,275,225]]
+
+    # TMP = reversed(TMP)
+    # for c , i in enumerate(TMP):
+    #     colors = [(0,0,255),(0,255,255)]
+    #     x1 , y1 ,x2 , y2 = i
+    #     center_x , center_y = (x1 + x2) // 2 , (y1 + y2) // 2
+    #     cv2.rectangle(img, (x1, y1), (x2, y2), color= colors[c % len(colors)], thickness=2)
+       # cv2.circle(img, (center_x, center_y), 5, (0, 0, 255), -1)  
+        # cv2.putText(img, f'({center_x}, {center_y})', 
+        #             (center_x, center_y), 
+        #             cv2.FONT_HERSHEY_SIMPLEX, 
+        #             0.3, 
+        #             (255, 255, 255), 
+        #             1)
+
+
+    # for idx , i in enumerate(boxes):
+    #     x1, y1, x2, y2 = i
+    #     center_x , center_y = (x1 + x2) // 2 , (y1 + y2) // 2
+    #     cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 255), 2)
+        # cv2.circle(img, (center_x, center_y), 5, (0, 0, 255), -1)  
+        # cv2.putText(img, f'({center_x}, {center_y})', 
+        #             (center_x, center_y), 
+        #             cv2.FONT_HERSHEY_SIMPLEX, 
+        #             0.3, 
+        #             (255, 255, 255), 
+        #             1)
+
     for row, cordidate in enumerate(BOX_CORD.values()):  
         for col, people in enumerate(boxes): 
             focuse_area_area = calculate_area(cordidate)
@@ -381,9 +411,31 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
     matches = sorted(list(map(lambda x : x+1 , filter(lambda x: x is not None, matches))))
     matches = list(filter(lambda x: x != 0, matches))
 
-    for i in matches:
-        x1 ,y1 ,x2 ,y2 = BOX_CORD[i]
-        cv2.rectangle(img , (x1 , y1) ,(x2 ,y2) , (255 , 255 , 0) , 1)
+    for idx , i in enumerate(matches):
+        x1 ,y1 ,x2 ,y2 = f_non_sig_rewnew[i]
+        cv2.rectangle(img , (x1 , y1) ,(x2 ,y2) , (255 , 255 , 0) , 2)
+        
+        # x1 , y1 , x2 , y2 = loc[i]
+        # center_x , center_y = (x1 + x2) // 2 , (y1 + y2) // 2
+        #cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        #cv2.circle(img, (center_x, center_y), 5, (0, 0, 255), -1)  
+        # cv2.putText(img, f'({center_x}, {center_y})', 
+        #             (center_x, center_y), 
+        #             cv2.FONT_HERSHEY_SIMPLEX, 
+        #             0.3, 
+        #             (255, 255, 255), 
+        #             1)
+        #cv2.putText(img , f"{idx}" ,(x1 , y1) , cv2.FONT_HERSHEY_SCRIPT_COMPLEX , 0.3 ,(0,0,255),1)
+        # cv2.putText(
+        #     img,  # 이미지
+        #     f"{idx+1}",  # 텍스트
+        #     (x2 - 20, y1 + 20),  # 우측 상단에서 약간의 패딩을 준 위치
+        #     cv2.FONT_HERSHEY_COMPLEX,  # 글꼴
+        #     0.6,  # 글자 크기
+        #     (0, 0 , 255),  # 초록색 (BGR 형식으로 설정)
+        #     1  # 글자 두께
+        # )
+    
 
     return sorted(matches)  , loc , img
 
@@ -456,8 +508,8 @@ def distance_consider_Weight(mapper, p_box , BOX_CORD , ALPHA , img):
             distance = np.sqrt((box_cx - p_cx) ** 2 + (box_cy - p_cy) ** 2)
             distance_mapper[rows][cols] = float(distance)
 
-            cv2.circle(img , (box_cx , box_cy) , 1 ,( 255,255,0), -1)
-            cv2.circle(img , (p_cx , p_cy) , 1 ,(0,0,255 ) , -1)
+            #cv2.circle(img , (box_cx , box_cy) , 1 ,( 255,255,0), -1)
+            #cv2.circle(img , (p_cx , p_cy) , 1 ,(0,0,255 ) , -1)
    # print(distance_mapper , end='\n\n')
     for idx , i in enumerate(distance_mapper):
         max_distance = np.max(i)

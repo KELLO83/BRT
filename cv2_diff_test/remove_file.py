@@ -25,7 +25,7 @@ def load_image(image_path):
     ax.imshow(image)
     ax.axis("off")
     image_name = os.path.basename(image_path)
-    print("Load Image: {} ".format(image_name))
+    #print("Load Image: {} ".format(image_name))
     ax.set_title(f"{image_path}")
 
     return image
@@ -97,19 +97,19 @@ def count_image(event):
     omit_count +=1
     print("count  : ", omit_count)
 
-    next_image(None)
+    # next_image(None)
 
 def miuns_count_image(event):
     global omit_count
     omit_count -= 1
     print("Minus count : ",omit_count)
 
-    previous_image(None)
+    # previous_image(None)
 
 # 이미지 캐시
 image_cache = {}
 
-base_folder = "TEST"
+base_folder = "RES2"
 file_list = natsort.natsorted(
     glob(os.path.join(base_folder, "**", "*.jpg"), recursive=True)
 )
