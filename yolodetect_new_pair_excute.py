@@ -126,7 +126,7 @@ class YOLODetector:
         
     @timing_decorator
     def run(self , alpha_value):
-        for index , i in tqdm(enumerate(self.distortion_list),total=len(self.distortion_list)):
+        for iterable_count , i in tqdm(enumerate(self.distortion_list),total=len(self.distortion_list)):
             image_name = i
             distort_image   = cv2.imread(i , cv2.IMREAD_COLOR)
 
@@ -169,6 +169,10 @@ class YOLODetector:
             answer , answer_location , ans_img =  box_module.second(nmx_boxes , undisort_image.copy() , Answer= True , ALPHA = 1 )
             compare_match , compare_location  , compare_img = box_module.second(nmx_boxes , undisort_image.copy() , Answer= False, ALPHA = alpha_value)
            # compare_match_2 , compare_location_2  , compare_img_2 = box_module.second(nmx_boxes , undisort_image.copy() , Answer= False, ALPHA = self.alpha[1])
+            # save_dir = 'q'
+            # os.makedirs(save_dir , exist_ok= True)
+            # full_nmae = os.path.join(save_dir , f"{iterable_count}.jpg")
+            # cv2.imwrite(full_nmae , compare_img)
 
 
             self.Metrix(answer_location , compare_location , box_p , flag = True )
@@ -325,8 +329,6 @@ class YOLODetector:
         F1_SCORE = 2 * (Precision * Recall) / (Precision + Recall) if (Precision + Recall) != 0 else 0
         Accuracy = (TP + TN) / (TP + TN + FP + FN) if (TP + TN + FP + FN) != 0 else 0
 
-
-
         ASSESSMENT_CRITERIA = [Precision, Recall, Accuracy, F1_SCORE]
         CONFUSION_METRIX = [TP, FP, FN, TN , TP + FN , FP + TN , TP + FP + TN + FN]
         return ASSESSMENT_CRITERIA , CONFUSION_METRIX
@@ -356,9 +358,12 @@ if __name__ == "__main__":
     import gc
 
     range_ = np.linspace(0, 1 ,11)
+    #range_ = [0.8]
     box_p  = [7,8,10,11,12,13]
-    new_people = [9,5,6]
-    box_p.extend(new_people)
+    #box_p = [7,8,11,12]
+    #new_people = 
+    # [9,5,6]
+    #box_p.extend(new_people)
     box_p.sort()
     # range_ = list(reversed(range_))
     # range_ = list(map (lambda x: round(x,2) , range_))
@@ -367,6 +372,7 @@ if __name__ == "__main__":
     #range_ = [0 , 0.1]
     print(range_)
     print(box_p)
+    print(f"{len(box_p)} 명 수행..")
     input("============ continue press key ! ==================")
 
     c = YOLODetector(distort_images, number, alpha=range_ , box_p= box_p)

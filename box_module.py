@@ -346,16 +346,18 @@ def second(boxes , img , number = 0 , Answer = True , ALPHA = 1 ):
     for index , i in enumerate(f_non_sig_rewnew.values()):
         x1 , y1  ,x2 ,y2 = i
         
-        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(
-            img,  # 이미지
-            f"{index + 1}",  # 텍스트
-            (x1 + 10, y1 + 20),  # 우측 상단에서 약간의 패딩을 준 위치
-            cv2.FONT_HERSHEY_DUPLEX,  # 글꼴
-            0.6,  # 글자 크기
-            (0, 255, 0),  # 초록색 (BGR 형식으로 설정)
-            1  # 글자 두께
-        )
+        #cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 1)
+
+        # cv2.putText(
+        #     img,  # 이미지
+        #     f"{index + 1}",  # 텍스트
+        #     (x1 + 10, y1 + 20),  # 우측 상단에서 약간의 패딩을 준 위치
+        #     cv2.FONT_HERSHEY_DUPLEX,  # 글꼴
+        #     0.6,  # 글자 크기
+        #     (0, 255, 0),  # 초록색 (BGR 형식으로 설정)
+        #     1  # 글자 두께
+        # )
     
     #TMP = [[324,162,381,244],[324,162,377,307],[236,183,285,295],[232,175,275,225]]
     #Q = [[236,183,285,295],[232,175,275,225]]
