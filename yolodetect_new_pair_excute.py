@@ -359,11 +359,11 @@ if __name__ == "__main__":
 
     range_ = np.linspace(0, 1 ,11)
     #range_ = [0.8]
-    box_p  = [7,8,10,11,12,13]
-    #box_p = [7,8,11,12]
-    #new_people = 
-    # [9,5,6]
+    #box_p  = [7,8,10,11,12,13] # 6명
+    #box_p = [7,8,11,12] # 4명
+    #new_people = # [9,5,6] # 9명 추가 
     #box_p.extend(new_people)
+    box_p = [1,2,3,4]
     box_p.sort()
     # range_ = list(reversed(range_))
     # range_ = list(map (lambda x: round(x,2) , range_))

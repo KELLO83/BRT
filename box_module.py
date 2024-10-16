@@ -72,7 +72,7 @@ f_non_sig_rewnew = { # 좌석에 맞추어진 박스
     13: [237, 198, 277, 257],
 }
 
-Q = f_non_sig_rewnew.copy()
+
 # """ f_non_sig_renew를 사람 머리까지 ..."""
 # for key in f_non_sig:
 #     # f_non_sig에서 y1 값 추출 (두 번째 요소)

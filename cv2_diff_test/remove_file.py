@@ -92,17 +92,23 @@ def delete_image(event):
         gc.collect()
 
 def count_image(event):
-    global omit_count
+    global omit_count 
+    global current_image_index
 
     omit_count +=1
-    print("count  : ", omit_count)
+    file_name = file_list[current_image_index]
+    print("image_name : {}   count : {}".format(file_name , omit_count))
 
     # next_image(None)
 
 def miuns_count_image(event):
     global omit_count
+    global current_image_index
+
     omit_count -= 1
-    print("Minus count : ",omit_count)
+    file_name = file_list[current_image_index]
+    print("image_name : {}   count  : {}".format(file_name , omit_count))
+
 
     # previous_image(None)
 
