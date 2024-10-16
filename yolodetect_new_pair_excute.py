@@ -23,7 +23,9 @@ def timing_decorator(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.time()
-        print("ALPHA : ",args[0].alpha)
+        current_alpha = args[1]
+        print("Model : ",args[0].model.model_name)
+        print("ALPHA: ", current_alpha)
         print(f"Function '{func.__name__}' started at {time.strftime('%H:%M:%S', time.localtime(start_time))}")
         
         result = func(*args, **kwargs)
@@ -31,13 +33,13 @@ def timing_decorator(func):
         end_time = time.time()
         print(f"Function '{func.__name__}' ended at {time.strftime('%H:%M:%S', time.localtime(end_time))}")
         print(f"Total execution time: {end_time - start_time:.4f} seconds")
-        
+
         return result
     return wrapper
 
 
 class YOLODetector:
-    def __init__(self, f1 , number , alpha ,model_path='yolo11x.pt'):
+    def __init__(self, f1 , number , alpha , box_p ,model_path='yolo8x.pt'):
         self.number = number
         self.distortion_list = f1
         self.model = YOLO(model_path).to("cuda")
@@ -46,6 +48,8 @@ class YOLODetector:
         self.not_same_source = 0
 
         self.alpha = alpha
+
+        self.box_people = box_p
 
         self.image_error_list = [
             'cv2_diff_test/front/4.1/image_0229.jpg',
@@ -63,18 +67,25 @@ class YOLODetector:
         self.FP_2 = 0
         self.FN_2 = 0
 
-    def append_data_to_excel(self, dataFrame,sheet_name = f"4_people"):
+    @property
+    def run_all(self):
+        for alpha_value in self.alpha:
+            self.run(alpha_value)
+        
+    def append_data_to_excel(self, dataFrame, alpha_value ,sheet_name = f"sheet_1"):
             import openpyxl
             from openpyxl import load_workbook, Workbook
             from openpyxl.utils.dataframe import dataframe_to_rows
             import pandas as pd
             
-
             file_path = 'resulted.xlsx'
             try:
                 excel_file = openpyxl.load_workbook(file_path)
                 if sheet_name in excel_file.sheetnames:
                     excel_ws = excel_file[sheet_name]
+                    if alpha_value == self.alpha[0]:
+                        excel_ws.append(dataFrame.columns.tolist())
+
                 else:
                     excel_ws = excel_file.create_sheet(sheet_name)
                     excel_ws.append(dataFrame.columns.tolist())
@@ -96,8 +107,7 @@ class YOLODetector:
                 excel_ws.append(r)
 
             excel_file.save(file_path)
-            
-
+    
     def nmx_box_to_cv2_loc(self , boxes):
         x1 , y1 , w, h = boxes
         x2 = x1 + w
@@ -115,7 +125,7 @@ class YOLODetector:
             return []
         
     @timing_decorator
-    def run(self):
+    def run(self , alpha_value):
         for index , i in tqdm(enumerate(self.distortion_list),total=len(self.distortion_list)):
             image_name = i
             distort_image   = cv2.imread(i , cv2.IMREAD_COLOR)
@@ -157,37 +167,11 @@ class YOLODetector:
 
 
             answer , answer_location , ans_img =  box_module.second(nmx_boxes , undisort_image.copy() , Answer= True , ALPHA = 1 )
-            compare_match , compare_location  , compare_img = box_module.second(nmx_boxes , undisort_image.copy() , Answer= False, ALPHA = self.alpha)
+            compare_match , compare_location  , compare_img = box_module.second(nmx_boxes , undisort_image.copy() , Answer= False, ALPHA = alpha_value)
            # compare_match_2 , compare_location_2  , compare_img_2 = box_module.second(nmx_boxes , undisort_image.copy() , Answer= False, ALPHA = self.alpha[1])
 
 
-            map_1= self.Metrix(answer_location , compare_location , flag= True )
-           # map_2 = self.Metrix(answer_location , compare_location_2 , flag = False)
-
-
-            
-            # if (self.TP + self.FN) != (self.TP_2 + self.FN_2) or (self.FP + self.TN) != (self.FP_2 + self.TN_2):
-            #     print(map_1)
-            #     print(map_2)
-            #     print(f"{self.TP + self.FN} ,{self.FP + self.TN}")
-            #     print(f"{self.TP_2 + self.FN_2} , {self.FP_2 + self.TN_2}")
-            #     print(f"{self.TP} {self.FN} {self.FP} {self.TN}")
-            #     print(f"{self.TP_2} {self.FN_2} {self.FP_2} {self.TN_2}")
-            #     cv2.namedWindow("answer",cv2.WINDOW_NORMAL)
-            #     cv2.namedWindow("t",cv2.WINDOW_NORMAL)
-            #     cv2.namedWindow('q' , cv2.WINDOW_NORMAL)
-            #     cv2.imshow("answer",ans_img)
-            #     cv2.imshow("t",compare_img)
-            #     cv2.imshow("q" , compare_img_2)
-            #     cv2.waitKey(0)
-            #     cv2.destroyAllWindows()
-
-            # cv2.namedWindow("R",cv2.WINDOW_NORMAL)
-            # cv2.namedWindow('V' , cv2.WINDOW_NORMAL)
-            # cv2.imshow("R",compare_img)
-            # cv2.imshow("V" , compare_img_2)
-            # cv2.waitKey(0)
-
+            self.Metrix(answer_location , compare_location , box_p , flag = True )
 
             self.total_people += len(compare_location.keys())     # 전체명수    
             answer_location = dict(sorted(answer_location.items()))
@@ -211,7 +195,6 @@ class YOLODetector:
                 if sorted(answer) != sorted(compare_location.keys()):
                     self.false_alarm += 1
                     stop_point = True
-
             else:
                 if len(answer_location) == len(compare_location):  # 길이가 같은 경우
                     for answer_key in answer_location:
@@ -237,12 +220,6 @@ class YOLODetector:
                 print(f"출처다름 : {self.not_same_source}")
             
 
-            # mapper = [None for i in range(13)]  # 13개의 자리 초기화
-            # ans_key = list(map(lambda x: x - 1, answer_location.keys()))
-            # compare_key = list(map(lambda x: x - 1, compare_location.keys()))
-
-
-
             # cv2.namedWindow("Answer" , cv2.WINDOW_NORMAL)
             # cv2.namedWindow("compare", cv2.WINDOW_NORMAL)
             # cv2.imshow("Answer" , ans_img)
@@ -260,16 +237,16 @@ class YOLODetector:
         
         
         Criterion , Confusion = self.Performeance_Metrix()
-        Confusion.insert(0,self.alpha)
+        Confusion.insert(0,round(alpha_value,1))
         Criterion = list(map (lambda x : round(x,4), Criterion))
         PR , RE , F1, ACC = Criterion
         Confusion.extend(Criterion)
         dataframe = pd.DataFrame([Confusion] , columns=['Alpha','TP','FP','FN','TN','TP + FN','FP + TN','TP+FP+TN+FN','Precison','Recall','Accuracy','F1'])
-        self.append_data_to_excel(dataframe)
+        self.append_data_to_excel(dataframe , alpha_value)
         print("Alpha  : ",self.alpha)
         print("Recall : {} Precision : {} F1 : {} ACC : {}".format(RE , PR , F1 , ACC))
 
-    def Metrix(self, answer_location, compare_location , flag ):
+    def Metrix(self, answer_location, compare_location , box_p , flag ):
 
         mapper = [None for i in range(13)] 
         ans_key = answer_location.keys() # 1 ~ 13 { 9 , 10 ,13}
@@ -297,59 +274,49 @@ class YOLODetector:
             except KeyError:
                 if adjust_key not in ans_key: 
                     mapper[adjust_key] = 'FP'
-            
-        for idx , i in enumerate(mapper):
-            if idx not in [6,7,9,10,11,12]:
-                mapper[idx] = None
-    
-            # 결과 계산
+
+        if box_p:  # empty full 상태
+            user = box_p # 정상 좌석 번호 입력
+            mapping_ = list(map(lambda x : x-1 ,user )) # [6,7,9,10,11,12]
+            for idx , i in enumerate(mapper):
+                if idx not in mapping_:
+                        mapper[idx] = None
+        
+        # 결과 계산
         TP = FP = FN = TN = 0
 
-        if flag :
-            for i in mapper:
-                if i == 'TP':
-                    TP += 1
-                    self.TP +=1
-                elif i == 'TN':
-                    TN += 1
-                    self.TN += 1
-                elif i == 'FN':
-                    FN += 1
-                    self.FN += 1
-                elif i == 'FP':
-                    FP += 1
-                    self.FP += 1
+        if flag:
+            TP_attr, TN_attr, FN_attr, FP_attr = 'TP', 'TN', 'FN', 'FP'
         else:
-            for i in mapper:
-                if i == 'TP':
-                    TP += 1
-                    self.TP_2 +=1
-                elif i == 'TN':
-                    TN += 1
-                    self.TN_2 += 1
-                elif i == 'FN':
-                    FN += 1
-                    self.FN_2 += 1
-                elif i == 'FP':
-                    FP += 1
-                    self.FP_2 += 1
-        
+            TP_attr, TN_attr, FN_attr, FP_attr = 'TP_2', 'TN_2', 'FN_2', 'FP_2'
 
-        
+        for i in mapper:
+            if i == None:
+                continue
+            if i == 'TP':
+                TP += 1
+                setattr(self, TP_attr, getattr(self, TP_attr) + 1)
+            elif i == 'TN':
+                TN += 1
+                setattr(self, TN_attr, getattr(self, TN_attr) + 1)
+            elif i == 'FN':
+                FN += 1
+                setattr(self, FN_attr, getattr(self, FN_attr) + 1)
+            elif i == 'FP':
+                FP += 1
+                setattr(self, FP_attr, getattr(self, FP_attr) + 1)
 
-            # 결과값이 13이 되지 않으면 에러 발생
-        if (TP + FP + FN + TN) != 6:
+        if (TP + FP + FN + TN) != len(user):
             print(f"TP: {TP}, FP: {FP}, FN: {FN}, TN: {TN}")
-            raise ValueError("Total does not equal 13.")
-        return mapper
-    
+            raise ValueError(f"Total does not equal {len(user)}.")
+           
     def Performeance_Metrix(self):
 
         TP = self.TP
         TN = self.TN
         FP = self.FP
         FN = self.FN
-
+        self.TP = self.TN = self.FP = self.FN = 0
         TN = TN - 556
         FN = FN + 556
 
@@ -383,24 +350,27 @@ if __name__ == "__main__":
     #distort_images = natsorted(glob(os.path.join("cv2_diff_test/problem" , "*.jpg")))
     #distort_images = natsort.natsorted(glob.glob(os.path.join('cv2_diff_test/front/1.1' ,'**','*.jpg'), recursive=True))
     #distort_images = natsort.natsorted(glob.glob(os.path.join('cv2_diff_test/front/krri1' ,'**','*.jpg'), recursive=True))
-   # distort_images = natsort.natsorted(glob.glob(os.path.join('cv2_diff_test/front/krri1' ,'**','*.jpg'), recursive=True))
-   # distort_images = distort_images[270 : ]
+    #distort_images = natsort.natsorted(glob.glob(os.path.join('cv2_diff_test/front/krri1' ,'**','*.jpg'), recursive=True))
+    #distort_images = distort_images[270 : ]
     errors = []
     import gc
 
     range_ = np.linspace(0, 1 ,11)
+    box_p  = [7,8,10,11,12,13]
+    new_people = [9,5,6]
+    box_p.extend(new_people)
+    box_p.sort()
     # range_ = list(reversed(range_))
     # range_ = list(map (lambda x: round(x,2) , range_))
 
-    #range_ = [ 0.6 , 0.8 , 1]
+    #range_ = [0.5 , 0.6 , 0.7  , 0.8  , 0.9 , 1]
     #range_ = [0 , 0.1]
-    for i in range_:
-        c = YOLODetector(distort_images, number, alpha=i)
-        c.run()
-        del c
-        gc.collect()
+    print(range_)
+    print(box_p)
+    input("============ continue press key ! ==================")
 
-
+    c = YOLODetector(distort_images, number, alpha=range_ , box_p= box_p)
+    c.run_all
 
     # import matplotlib.pyplot as plt
     # plt.figure(figsize=(12, 12))
