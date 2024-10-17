@@ -123,25 +123,25 @@ head_top = {
 #             f_non_sig_rewnew[key] = x1 , y1 , x2 , Y2
 
 
-for key , index in f_non_sig_rewnew.items():
-    x1 , y1 ,x2 , y2 = index
-    # gap = abs(y2 - y1)
-    # gap = gap / 10
-    # y1 = int(y1 - gap * 2)
-    if key in [1,2]:
-        f_non_sig_rewnew[key] = x1 , y1-5  , x2 , y2
+# for key , index in f_non_sig_rewnew.items():
+#     x1 , y1 ,x2 , y2 = index
+#     # gap = abs(y2 - y1)
+#     # gap = gap / 10
+#     # y1 = int(y1 - gap * 2)
+#     if key in [1,2]:
+#         f_non_sig_rewnew[key] = x1 , y1-5  , x2 , y2
     
-    if key in [3,4]:
-        f_non_sig_rewnew[key] = x1 , y1-10 ,x2 , y2
+#     if key in [3,4]:
+#         f_non_sig_rewnew[key] = x1 , y1-10 ,x2 , y2
 
-    if key in [5,6,9]:
-        f_non_sig_rewnew[key] = x1 , y1-15  , x2 , y2
+#     if key in [5,6,9]:
+#         f_non_sig_rewnew[key] = x1 , y1-15  , x2 , y2
         
-    if key in [7,8,10]:
-        f_non_sig_rewnew[key] = x1 , y1-20, x2 , y2
+#     if key in [7,8,10]:
+#         f_non_sig_rewnew[key] = x1 , y1-20, x2 , y2
 
-    if key in [11,12,13]:
-        f_non_sig_rewnew[key] = x1 , y1-25 , x2 , y2
+#     if key in [11,12,13]:
+#         f_non_sig_rewnew[key] = x1 , y1-25 , x2 , y2
 
 
 
