@@ -290,13 +290,13 @@ class Mapping_Excution:
                 occupancy_rate = intersection_area / focuse_area_area if focuse_area_area > 0 else 0
                 mapper[col][row] = occupancy_rate
         
-        print(np.array(mapper , dtype=np.float32))
+        print("교집합만\n",np.array(mapper , dtype=np.float32))
         if Answer:
             Intersection_dis_mapper = self.distance_consider(mapper , boxes , BOX_CORD , ALPHA = 1)
         else:
             Intersection_dis_mapper , img = self.distance_consider_Weight(mapper , boxes , BOX_CORD , ALPHA , img)
         print('====================================================')
-        print(Intersection_dis_mapper)
+        print("교집합 거리 고려\n",Intersection_dis_mapper)
         Intersection_dis_mapper = self.k_MEANS(Intersection_dis_mapper)
         matches , matches_loc = self.matched_box(Intersection_dis_mapper , boxes)
         matches_loc = dict(matches_loc)
@@ -405,18 +405,27 @@ class Mapping_Excution:
         from sklearn.cluster import KMeans
         import matplotlib.pyplot as plt
 
-        for i in mapper:
-            data = i.reshape(-1,1)
-            print(data)
-            K = KMeans(n_clusters=2 , random_state=42).fit(data)
+        Noise_remove = np.zeros_like(mapper)
+        for idx, i in enumerate(mapper):
+            data = i.reshape(-1, 1)  # Reshape to a 2D array with one column
+            if np.all(data == 0):
+                Noise_remove[idx] = None
+                continue
+            K = KMeans(n_clusters=2, random_state=42).fit(data)  # Fit KMeans
             labels = K.labels_
-            print(data.flatten())
-            print(labels)
 
-            plt.scatter(data , np.zeros_like(data) , c=labels , cmap = 'viridis')
-            plt.show()
+            #print(data.flatten())  # Print original data
+            #print(labels)  # Print the labels assigned by KMeans
 
+            # Update Noise_remove based on the labels
+            for j in range(len(labels)):
+                if labels[j] == 1:
+                    Noise_remove[idx, j] = data[j]  # Keep original data where label is 1
+                else:
+                    Noise_remove[idx, j] = None  # Set to 0 where label is 0
 
+        print("노이즈제거",Noise_remove)
+        return Noise_remove
 if __name__ == '__main__':
     img = np.zeros((600,600),dtype=np.uint8)
     cord = [[159, 240, 255, 427], [341, 232, 434, 399], [222, 175, 283, 283], [332, 80, 346, 113], [339, 174, 388, 269], [339, 212, 395, 318]]
