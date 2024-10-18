@@ -176,6 +176,8 @@ class YOLODetector:
         if self.SAVE:
             self.PerformanceEvaluator.write_Q_to_excel()
 
+        self.false_alarm = self.not_same_source = 0
+
 class PerformanceEvaluator:
     def __init__(self,EXCEL_NAME):
         self.EXCEL_NAME = EXCEL_NAME
@@ -407,6 +409,7 @@ def main(f_list , r_range):
     args.excel_name = 'test2.xlsx'
     args.excel_save = True
     args.viewer = False
+    args.model_path = 'yolo8x.pt'
     for key , value in vars(args).items():
         print(f"{key} : {value}")
     input("============ continue press key ! ==================")

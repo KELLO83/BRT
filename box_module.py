@@ -263,8 +263,8 @@ class Mapping_Excution:
             BOX_CORD = C.first_answer()
         else:
             BOX_CORD = (
-                        C.first_fit_sit() if Higer_5_10_15_25
-                        else C.first_fit_sit_5_10_15()
+                        C.first_fit_sit_5_10_15() if Higer_5_10_15_25
+                        else C.first_fit_sit()
                     )
             
         img = img.copy()
@@ -283,7 +283,7 @@ class Mapping_Excution:
                         (255, 255, 255), 
                         1)
 
-        for row, cordidate in enumerate(BOX_CORD.values()):  
+        for row, cordidate in enumerate(BOX_CORD.values()):  # 박스 사람 매칭 알고리즘 수행 INTERSECTION + DISTANCE
             for col, people in enumerate(boxes): 
                 focuse_area_area = Calc_class.calculate_area(cordidate)
                 intersection_area , img = Calc_class.calculate_intersection_area(people, cordidate , img)
